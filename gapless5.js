@@ -45,14 +45,14 @@ var Gapless5Policy = {
 
 // Request manager settings
 // For memory policy: # songs to grab in advance (-1 grabs as many as possible.)
-var Gapless5LookAhead = -1;
+var Gapless5MemoryLookAhead = -1;
 
 // For memory policy: heuristic for uncompressed audio file size per minute
 // This is assuming 16-bit 44.1kHz audio
 var Gapless5MBPerMin = 10;
 
 // For memory policy: maximum amount of memory to use
-var Gapless5MaxMemory = 256;
+var Gapless5MemoryMax = 256;
 
 
 // A Gapless5Source "class" handles track-specific audio requests
@@ -370,6 +370,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// Values populated by Gapless5Player actions
 	this.sources = [];		// List of Gapless5Sources
 	this.loadQueue = [];		// List of files to consume
+	this.partialQueue = [];		// Many policies need a slice of the full queue
 	this.loadingTrack = -1;		// What file to consume
 	var parent = parentPlayer;
 	var that = this;
@@ -386,6 +387,13 @@ var Gapless5RequestManager = function(parentPlayer) {
 
 		return Math.ceil((entry.timer() / entry.finishMS) * 100);
 	}
+
+	// Build a partial queue given a number of songs
+	var buildPartialQueue = function(count) {
+		for ( var i = 0; i < count && i < that.loadQueue.length ; i++ )
+			that.partialQueue[i] = that.loadQueue.shift();
+	}
+
 
 	// Default policy from gapless' original version: if the last song finished
 	// loading, continue loading new songs. This tends to OOM browsers :)
@@ -406,14 +414,26 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 	}
 
-	var mobilePolicy = function() {
-		if (that.loadQueue.length > 0)
+	// Load only N-1 songs ahead of the starting song into a buffer.
+	// At the 50% mark of the Nth song, start the next buffer.
+	// When this buffer ends, switch to the next one, and erase the old one
+	var lookAheadPolicy = function() {
+		if (that.partialQueue == [])	// Build a partial queue if we need it
 		{
-			// Behavior
+			buildPartialQueue(1 + that.lookAhead);
+			// If already playing a track, figure out how many loaded
+			// songs remain, and if we're 50% through the last one,
+			// start a new audioContext, and trigger a delete of the old
+			// one once we've switched over. TOWRITE
+		}
 
+		if (that.partialQueue.length > 0)
+		{
+			var entry = that.partialQueue.shift();
+			that.loadingTrack = entry[0];
 			if (that.loadingTrack < that.sources.length)
 			{
-				//console.log("oomPolicy: loading track " + that.loadingTrack + ": " + entry[1]);
+				//console.log("mobilePolicy: loading track " + that.loadingTrack + ": " + entry[1]);
 				that.sources[that.loadingTrack].load(entry[1]);
 			}	
 		}
@@ -452,7 +472,8 @@ var Gapless5RequestManager = function(parentPlayer) {
 				break;
 
 			case Gapless5Policy.Mobile:
-				mobilePolicy();
+				that.lookAhead = 2;	// Load two songs after the current one
+				lookAheadPolicy();
 				break;
 		}
 	}
