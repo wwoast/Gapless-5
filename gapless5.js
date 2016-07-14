@@ -406,6 +406,23 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 	}
 
+	var mobilePolicy = function() {
+		if (that.loadQueue.length > 0)
+		{
+			// Behavior
+
+			if (that.loadingTrack < that.sources.length)
+			{
+				//console.log("oomPolicy: loading track " + that.loadingTrack + ": " + entry[1]);
+				that.sources[that.loadingTrack].load(entry[1]);
+			}	
+		}
+		else
+		{
+			that.loadingTrack = -1;
+		}
+	}
+
 
 	// PUBLIC METHODS
 	// Choose the effective policy in use. Some rules:
@@ -429,7 +446,15 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// Based on a request management policy, determine how and when the next
 	// track should be loaded.
 	this.dequeueNextLoad = function() {
-		oomPolicy();
+		switch(that.getPolicy()) {
+			case Gapless5Policy.OOM:
+				oomPolicy();
+				break;
+
+			case Gapless5Policy.Mobile:
+				mobilePolicy();
+				break;
+		}
 	}
 }
 
