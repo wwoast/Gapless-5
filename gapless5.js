@@ -44,15 +44,13 @@ var Gapless5Policy = {
 	};
 
 // Request manager settings
-// For memory policy: # songs to grab in advance (-1 grabs as many as possible.)
-var Gapless5MemoryLookAhead = -1;
-
-// For memory policy: heuristic for uncompressed audio file size per minute
-// This is assuming 16-bit 44.1kHz audio
-var Gapless5MBPerMin = 10;
-
-// For memory policy: maximum amount of memory to use
-var Gapless5MemoryMax = 256;
+// Look-Ahead Policy settings
+var Gapless5PercentOverlap = 50;	// last-lookahead track is 50% loaded before next buffer starts
+var Gapless5OverlapMinimum = 90;	// if track shorter than 180s, cut-over at beginning of last track
+// Memory-Policy settings
+var Gapless5MemoryLookAhead = -1;	// songs to grab in advance (-1, no limit)
+var Gapless5MBPerMin = 10;		// heuristic for audio file size per minute (16-bit, 44.1kHz)
+var Gapless5MemoryMax = 256;		// maximum amount of memory to use in MB
 
 
 // A Gapless5Source "class" handles track-specific audio requests
@@ -80,6 +78,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 	var loadedPercent = 0;
 	var audioFinished = false;
 	var endedCallback = null;
+	var managerChecked = false;
 
 	// request manager info
 	var initMS = new Date().getTime();
@@ -296,6 +295,12 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 				parent.setLoadedSpan(loadedPercent)
 			}
 		}
+
+		if ((loadedPercent >= Gapless5PercentOverlap) && (managerChecked == false))
+		{
+			window.dispatchEvent("percent");
+			managerChecked = true;	// Fires only once per song load
+		}
 	}
 
 	this.setPosition = function(newPosition, bResetPlay) {
@@ -366,6 +371,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	this.orderedPolicy = Gapless5Policy.OOM;
 	this.shuffledPolicy = Gapless5Policy.OOM;
 	this.lookAhead = Gapless5LookAhead;
+	this.evtPercent = new Event("percent", {"bubbles":true, "cancellable":false});
 
 	// Values populated by Gapless5Player actions
 	this.sources = [];		// List of Gapless5Sources
@@ -376,6 +382,17 @@ var Gapless5RequestManager = function(parentPlayer) {
 	var that = this;
 
 	// PRIVATE METHODS
+	// For most policies, we create event listeners that fire when the song
+	// is loaded up to a particular length. The request manager will use these
+	// to decide when to start loading a secondary buffer.
+	var setListener = function() {
+		window.addEventListener(that.evtPercent, function(e) { askForNewContext(); }, false);
+	}
+
+	// Are we ready for a new context? The answer is yes, if based on the set
+	// request manager policy, we're on the song just prior to the new buffer starting.
+	// TODO 
+
 	// Assuming no gaps/pause events, how far are we in the current song? This 
 	// will be >100% when gaps/pauses occur, fine for request manager tracking.
 	// If track actually finished playing, return -1.
@@ -388,12 +405,11 @@ var Gapless5RequestManager = function(parentPlayer) {
 		return Math.ceil((entry.timer() / entry.finishMS) * 100);
 	}
 
-	// Build a partial queue given a number of songs
+	// Build a partial queue given a count of songs
 	var buildPartialQueue = function(count) {
 		for ( var i = 0; i < count && i < that.loadQueue.length ; i++ )
 			that.partialQueue[i] = that.loadQueue.shift();
 	}
-
 
 	// Default policy from gapless' original version: if the last song finished
 	// loading, continue loading new songs. This tends to OOM browsers :)
@@ -426,6 +442,9 @@ var Gapless5RequestManager = function(parentPlayer) {
 			// start a new audioContext, and trigger a delete of the old
 			// one once we've switched over. TOWRITE
 		}
+
+		// TODO: decide where in the queue we're playing. If not the last song
+		// in the partial queue, nothing to do yet.
 
 		if (that.partialQueue.length > 0)
 		{
