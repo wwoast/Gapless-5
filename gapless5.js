@@ -298,7 +298,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 
 		if ((loadedPercent >= Gapless5PercentOverlap) && (managerChecked == false))
 		{
-			window.dispatchEvent("percent");
+			$(parent).dispatchEvent("percent");
 			managerChecked = true;	// Fires only once per song load
 		}
 	}
@@ -386,7 +386,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// is loaded up to a particular length. The request manager will use these
 	// to decide when to start loading a secondary buffer.
 	var setListener = function() {
-		window.addEventListener(that.evtPercent, function(e) { askForNewContext(); }, false);
+		$(parent).addEventListener(that.evtPercent, function(e) { askForNewContext(); }, false);
 	}
 
 	// Are we ready for a new context? The answer is yes, if based on the set
