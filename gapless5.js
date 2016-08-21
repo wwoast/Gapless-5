@@ -23,8 +23,8 @@ window.mobilecheck = function() {
 window.hasWebKit = ('webkitAudioContext' in window) && !('chrome' in window);
 
 // There can be only one AudioContext per window, so to have multiple players we must define this outside the player scope
-var gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-var gapless5AudioContextStandby = null;
+var Gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+var Gapless5AudioContextStandby = null;
 
 var GAPLESS5_PLAYERS = {};
 var Gapless5State = {
@@ -228,7 +228,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 		if (buffer != null)
 		{
 			//console.log("playing WebAudio");
-			gapless5AudioContext.resume();
+			Gapless5AudioContext.resume();
 			source = context.createBufferSource();
 			source.connect(outputNode);
 			source.buffer = buffer;
@@ -402,17 +402,17 @@ var Gapless5RequestManager = function(parentPlayer) {
 
 	// Dealloc the current global audioContext and cut over to a standby. 
 	var cutoverAudioContext = function () {
-		if ( parent.context == gapless5AudioContext )
+		if ( parent.context == Gapless5AudioContext )
 		{
-			gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			parent.context = gapless5AudioContextStandby;
-			gapless5AudioContext = null;
+			Gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			parent.context = Gapless5AudioContextStandby;
+			Gapless5AudioContext = null;
 		}
 		else
 		{
-			gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			parent.context = gapless5AudioContext;
-			gapless5AudioContextStandby = null;
+			Gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			parent.context = Gapless5AudioContext;
+			Gapless5AudioContextStandby = null;
 		}
 	}
 
@@ -892,7 +892,7 @@ this.useHTML5Audio = ((options != null) && ('useHTML5Audio' in options)) ? optio
 this.id = Math.floor((1 + Math.random()) * 0x10000);
 
 // WebAudio API
-var context = gapless5AudioContext;
+var context = Gapless5AudioContext;
 var gainNode = (window.hasWebKit) ? context.createGainNode() : (typeof AudioContext != "undefined") ? context.createGain() : null;
 if (context && gainNode)
 {
