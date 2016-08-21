@@ -383,6 +383,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	this.partialQueue = [];		// Many policies need a slice of the full queue
 	this.loadingTrack = -1;		// What file to consume
 	this.cutover = false;		// Ready to cutover?
+	var standby = Gapless5AudioContextStandby;
 	var parent = parentPlayer;
 	var that = this;
 
@@ -405,12 +406,12 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 
 		// Ready for a new context, given we're on the song at the end of 
-		// the previous audioContext buffer.
+		// the previous audioContext buffer. Prepare the next queue, and
+		// start loading new tracks if the policy says to.
 		if ( that.partialQueue.length == 0 ) {
 		{
 			that.cutover = true;
-			// TODO: load all subsequent songs into standby buffer starting now
-			// but keep the existing context in memory/use.
+			dequeueNextLoad();
 		}
 	}
 
@@ -426,10 +427,21 @@ var Gapless5RequestManager = function(parentPlayer) {
 		return Math.ceil((entry.timer() / entry.finishMS) * 100);
 	}
 
-	// Build a partial queue given a count of songs
-	var buildPartialQueue = function(count) {
-		for ( var i = 0; i < count && i < that.loadQueue.length ; i++ )
+	// Build a partial queue given a count of songs, and set their target
+	// audio context to the one they'll be playing in.
+	var buildPartialQueue = function(count, context) {
+		for ( var i = 0; i < count && i < that.loadQueue.length; i++ )
 			that.partialQueue[i] = that.loadQueue.shift();
+
+		if (arguments > 1)
+		{
+			for ( var j = 0 ; j < that.partialQueue.length; j++ )
+			{
+				var entry = that.partialQueue[j];
+				var index = entry[0];
+				that.sources[index].setContext(context);
+			}
+		}
 	}
 
 	// Default policy from gapless' original version: if the last song finished
@@ -457,21 +469,19 @@ var Gapless5RequestManager = function(parentPlayer) {
 	var lookAheadPolicy = function() {
 		if (that.partialQueue == [])	// Build a partial queue if we need it
 		{
-			buildPartialQueue(1 + that.lookAhead);
+			buildPartialQueue(1 + that.lookAhead, standby);
 		}
 
 		// TODO: decide where in the queue we're playing. If not the last song
 		// in the partial queue, nothing to do yet.
-
 		if (that.partialQueue.length > 0)
 		{
 			var entry = that.partialQueue.shift();
-			that.loadQueue.shift();
 
 			that.loadingTrack = entry[0];
 			if (that.loadingTrack < that.sources.length)
 			{
-				//console.log("mobilePolicy: loading track " + that.loadingTrack + ": " + entry[1]);
+				//console.log("lookAheadPolicy: loading track " + that.loadingTrack + ": " + entry[1]);
 				that.sources[that.loadingTrack].load(entry[1]);
 			}	
 		}
@@ -505,7 +515,8 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// Based on a request management policy, determine how and when the next
 	// track should be loaded.
 	this.dequeueNextLoad = function() {
-		switch(that.getPolicy()) {
+		switch(that.getPolicy()) 
+		{
 			case Gapless5Policy.OOM:
 				oomPolicy();
 				break;
@@ -524,15 +535,19 @@ var Gapless5RequestManager = function(parentPlayer) {
 			Gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
 			parent.context = Gapless5AudioContextStandby;
 			Gapless5AudioContext = null;
+			standby = Gapless5AudioContext;
 		}
 		else
 		{
 			Gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
 			parent.context = Gapless5AudioContext;
 			Gapless5AudioContextStandby = null;
+			standby = Gapless5AudioContextStandby;
 		}
 
 		that.cutover = false;
+		// TODO: Do we need to migrate states and things from one context
+		// to the others?
 	}
 }
 
