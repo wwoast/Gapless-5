@@ -298,7 +298,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 
 		if ((loadedPercent >= Gapless5PercentOverlap) && (managerChecked == false))
 		{
-			$(parent).dispatchEvent("percent");
+			$(parent).dispatchEvent(parent.mgr.evtPercent);
 			managerChecked = true;	// Fires only once per song load
 		}
 	}
@@ -365,14 +365,6 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 // appropriate for the platform detected.
 var Gapless5RequestManager = function(parentPlayer) {
 
-	// OBJECT STATE
-	// Each request manager item is an object containing the Gapless5Source,
-	// the loading/progress state, and other metadata
-	this.orderedPolicy = Gapless5Policy.OOM;
-	this.shuffledPolicy = Gapless5Policy.OOM;
-	this.lookAhead = Gapless5LookAhead;
-	this.evtPercent = new Event("percent", {"bubbles":true, "cancellable":false});
-
 	// Values populated by Gapless5Player actions
 	this.sources = [];		// List of Gapless5Sources
 	this.loadQueue = [];		// List of files to consume
@@ -381,17 +373,26 @@ var Gapless5RequestManager = function(parentPlayer) {
 	var parent = parentPlayer;
 	var that = this;
 
+	// OBJECT STATE
+	// Each request manager item is an object containing the Gapless5Source,
+	// the loading/progress state, and other metadata
+	this.orderedPolicy = Gapless5Policy.OOM;
+	this.shuffledPolicy = Gapless5Policy.OOM;
+	this.lookAhead = Gapless5LookAhead;
+	this.evtPercent = new Event("percent", {"bubbles":true, "cancellable":false});
+	$(parent).addEventListener("percent", function(e) { askForNewContext(); }, false);
+
 	// PRIVATE METHODS
 	// For most policies, we create event listeners that fire when the song
-	// is loaded up to a particular length. The request manager will use these
+	// has played a specific percentage of length. The request manager will use these
 	// to decide when to start loading a secondary buffer.
-	var setListener = function() {
-		$(parent).addEventListener(that.evtPercent, function(e) { askForNewContext(); }, false);
+	var askForNewContext = function() {
+		// Ready for a new context, given we're on the song at the end of 
+		// the previous audioContext buffer
+		if ( that.partialQueue.length > 0 ) {
+			
+		}
 	}
-
-	// Are we ready for a new context? The answer is yes, if based on the set
-	// request manager policy, we're on the song just prior to the new buffer starting.
-	// TODO 
 
 	// Assuming no gaps/pause events, how far are we in the current song? This 
 	// will be >100% when gaps/pauses occur, fine for request manager tracking.
@@ -449,6 +450,8 @@ var Gapless5RequestManager = function(parentPlayer) {
 		if (that.partialQueue.length > 0)
 		{
 			var entry = that.partialQueue.shift();
+			that.loadQueue.shift();
+
 			that.loadingTrack = entry[0];
 			if (that.loadingTrack < that.sources.length)
 			{
