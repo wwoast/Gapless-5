@@ -415,18 +415,6 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 	}
 
-	// Assuming no gaps/padd.use events, how far are we in the current song? This 
-	// will be >100% when gaps/pauses occur, fine for request manager tracking.
-	// If track actually finished playing, return -1.
-	var percentPlayed = function(entry) {
-		if (entry.finished() == true) 
-		{
-			return -1;
-		}
-
-		return Math.ceil((entry.timer() / entry.finishMS) * 100);
-	}
-
 	// Build a partial queue given a count of songs, and set their target
 	// audio context to the one they'll be playing in.
 	var buildPartialQueue = function(count, context) {
