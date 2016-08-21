@@ -47,7 +47,7 @@ var Gapless5Policy = {
 // Request manager settings
 // Look-Ahead Policy settings
 var Gapless5PercentOverlap = 50;	// last-lookahead track is 50% loaded before next buffer starts
-var Gapless5OverlapMinimum = 90;	// if track shorter than 180s, cut-over at beginning of last track
+var Gapless5OverlapMinimum = 90;	// TODO: if track shorter than 90s, cut-over at beginning of last track
 // Memory-Policy settings
 var Gapless5MemoryLookAhead = -1;	// songs to grab in advance (-1, no limit)
 var Gapless5MBPerMin = 10;		// heuristic for audio file size per minute (16-bit, 44.1kHz)
@@ -103,6 +103,17 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 		state = newState;
 		queuedState = Gapless5State.None;
 	};
+
+	this.setContext = function(newContext) {
+		if ( state == Gapless5State.None )
+		{
+			context = newContext; 
+		}	
+		else
+		{
+			console.log("setContext: can't set audio context if state is initialized (" + state + ")";
+		}
+	}
 
 	this.finished = function() { return audioFinished; }
 
@@ -371,6 +382,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	this.loadQueue = [];		// List of files to consume
 	this.partialQueue = [];		// Many policies need a slice of the full queue
 	this.loadingTrack = -1;		// What file to consume
+	this.cutover = false;		// Ready to cutover?
 	var parent = parentPlayer;
 	var that = this;
 
@@ -396,23 +408,9 @@ var Gapless5RequestManager = function(parentPlayer) {
 		// the previous audioContext buffer.
 		if ( that.partialQueue.length == 0 ) {
 		{
-			// Start using the standby buffer for sources upon song stop
-		}
-	}
-
-	// Dealloc the current global audioContext and cut over to a standby. 
-	var cutoverAudioContext = function () {
-		if ( parent.context == Gapless5AudioContext )
-		{
-			Gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			parent.context = Gapless5AudioContextStandby;
-			Gapless5AudioContext = null;
-		}
-		else
-		{
-			Gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			parent.context = Gapless5AudioContext;
-			Gapless5AudioContextStandby = null;
+			that.cutover = true;
+			// TODO: load all subsequent songs into standby buffer starting now
+			// but keep the existing context in memory/use.
 		}
 	}
 
@@ -460,10 +458,6 @@ var Gapless5RequestManager = function(parentPlayer) {
 		if (that.partialQueue == [])	// Build a partial queue if we need it
 		{
 			buildPartialQueue(1 + that.lookAhead);
-			// If already playing a track, figure out how many loaded
-			// songs remain, and if we're 50% through the last one,
-			// start a new audioContext, and trigger a delete of the old
-			// one once we've switched over. TOWRITE
 		}
 
 		// TODO: decide where in the queue we're playing. If not the last song
@@ -489,13 +483,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 
 
 	// PUBLIC METHODS
-	// Choose the effective policy in use. Some rules:
-	//    album: revert to "desktop" policy if used for shuffledPolicy
-        this.setPolicy = function(orderedPolicy, shuffledPolicy) {
-	 	that.orderedPolicy = orderedPolicy;
-		that.shuffledPolicy = shuffledPolicy;
-	}
-
+	// Get the currently active policy
 	this.getPolicy = function() {
 		if (parent.trk.shuffled() == true)
 		{
@@ -505,6 +493,13 @@ var Gapless5RequestManager = function(parentPlayer) {
 		{
 			return orderedPolicy;
 		}
+	}
+
+	// Choose the effective policy in use. TODO: Some rules:
+	//    album: revert to "desktop" policy if used for shuffledPolicy
+        this.setPolicy = function(orderedPolicy, shuffledPolicy) {
+	 	that.orderedPolicy = orderedPolicy;
+		that.shuffledPolicy = shuffledPolicy;
 	}
 
 	// Based on a request management policy, determine how and when the next
@@ -520,6 +515,24 @@ var Gapless5RequestManager = function(parentPlayer) {
 				lookAheadPolicy();
 				break;
 		}
+	}
+
+	// Dealloc current audioContext, cut over to a standby, and reset the cutover flag
+	this.cutoverAudioContext = function () {
+		if ( parent.context == Gapless5AudioContext )
+		{
+			Gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			parent.context = Gapless5AudioContextStandby;
+			Gapless5AudioContext = null;
+		}
+		else
+		{
+			Gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			parent.context = Gapless5AudioContext;
+			Gapless5AudioContextStandby = null;
+		}
+
+		that.cutover = false;
 	}
 }
 
@@ -1108,6 +1121,12 @@ this.onEndedCallback = function() {
 	// we've finished playing the track
 	resetPosition();
 	that.mgr.sources[dispIndex()].stop(true);
+	// TODO: perform audio context cutovers to save memory
+	if (that.mgr.cutover == true) 
+	{
+		that.mgr.cutoverAudioContext();
+	}
+
 	if (that.loop || index() < numTracks() - 1)
 	{
 		that.next(true);
