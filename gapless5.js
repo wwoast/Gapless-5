@@ -24,6 +24,7 @@ window.hasWebKit = ('webkitAudioContext' in window) && !('chrome' in window);
 
 // There can be only one AudioContext per window, so to have multiple players we must define this outside the player scope
 var gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+var gapless5AudioContextStandby = null;
 
 var GAPLESS5_PLAYERS = {};
 var Gapless5State = {
@@ -387,14 +388,35 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// has played a specific percentage of length. The request manager will use these
 	// to decide when to start loading a secondary buffer.
 	var askForNewContext = function() {
+		if ( that.orderedPolicy == Gapless5Policy.OOM ) {
+			return;
+		}
+
 		// Ready for a new context, given we're on the song at the end of 
-		// the previous audioContext buffer
-		if ( that.partialQueue.length > 0 ) {
-			
+		// the previous audioContext buffer.
+		if ( that.partialQueue.length == 0 ) {
+		{
+			// Start using the standby buffer for sources upon song stop
 		}
 	}
 
-	// Assuming no gaps/pause events, how far are we in the current song? This 
+	// Dealloc the current global audioContext and cut over to a standby. 
+	var cutoverAudioContext = function () {
+		if ( parent.context == gapless5AudioContext )
+		{
+			gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			parent.context = gapless5AudioContextStandby;
+			gapless5AudioContext = null;
+		}
+		else
+		{
+			gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			parent.context = gapless5AudioContext;
+			gapless5AudioContextStandby = null;
+		}
+	}
+
+	// Assuming no gaps/padd.use events, how far are we in the current song? This 
 	// will be >100% when gaps/pauses occur, fine for request manager tracking.
 	// If track actually finished playing, return -1.
 	var percentPlayed = function(entry) {
