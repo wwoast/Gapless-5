@@ -52,6 +52,8 @@ var Gapless5OverlapMinimum = 90;	// if track shorter than 90s, cut-over at begin
 var Gapless5MemoryLookAhead = -1;	// songs to grab in advance (-1, no limit)
 var Gapless5MBPerMin = 10;		// heuristic for audio file size per minute (16-bit, 44.1kHz)
 var Gapless5MemoryMax = 256;		// maximum amount of memory to use in MB
+var Gapless5Mobile = false;		// mobile gapless support may be poor. fallback to <audio>
+
 // Shuffle settings
 // The number of songs to buffer in shuffle mode.
 //     0: turn off gapless playback in shuffle mode
@@ -437,8 +439,36 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 	}
 
-	// Default policy from gapless' original version: if the last song finished
-	// loading, continue loading new songs. This tends to OOM browsers :)
+	// Dealloc current audioContext, cut over to a prepared standby if it exists,
+        // and reset the cutover flag.
+	var cutoverAudioContext = function () {
+		if ( parent.context == Gapless5AudioContext )
+		{
+			Gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			parent.context = Gapless5AudioContextStandby;
+			Gapless5AudioContext = null;
+			standby = Gapless5AudioContext;
+		}
+		else
+		{
+			Gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			parent.context = Gapless5AudioContext;
+			Gapless5AudioContextStandby = null;
+			standby = Gapless5AudioContextStandby;
+		}
+
+		that.cutover = false;
+		// TODO: Do we need to migrate states and things from one context
+		// to the others?
+	}
+
+
+	// The state change callback function. Upon track change, figure out which
+        // tasks are required to minimize memory use in the browser.
+
+	// REQUEST MANAGEMENT STRATEGIES
+	// Gapless5Policy = OOM (The original/default Gapless-5 behavior)
+	// If a song finishes loading, keep loading new songs, and OOM your browser :P
 	var oomPolicy = function() {
 		if (that.loadQueue.length > 0)
 		{
@@ -456,6 +486,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 	}
 
+	// Gapless5Policy = (Mobile/Desktop/Album/Memory)
 	// Load only N-1 songs ahead of the starting song into a buffer.
 	// At the 50% mark of the Nth song, start the next buffer.
 	// When this buffer ends, switch to the next one, and erase the old one
@@ -521,27 +552,6 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 	}
 
-	// Dealloc current audioContext, cut over to a standby, and reset the cutover flag
-	this.cutoverAudioContext = function () {
-		if ( parent.context == Gapless5AudioContext )
-		{
-			Gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			parent.context = Gapless5AudioContextStandby;
-			Gapless5AudioContext = null;
-			standby = Gapless5AudioContext;
-		}
-		else
-		{
-			Gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			parent.context = Gapless5AudioContext;
-			Gapless5AudioContextStandby = null;
-			standby = Gapless5AudioContextStandby;
-		}
-
-		that.cutover = false;
-		// TODO: Do we need to migrate states and things from one context
-		// to the others?
-	}
 }
 
 
