@@ -456,18 +456,55 @@ var Gapless5RequestManager = function(parentPlayer) {
 	var setLookAhead = function() {
 		if (parent.trk.shuffled() == true)
 		{
-			that.lookAhead = Gapless5ShuffleLookAhead;
+			return Gapless5ShuffleLookAhead;
 		}
 		else
 		{
-			that.lookAhead = Gapless5LookAhead[that.getPolicy()];
+			return Gapless5LookAhead[that.getPolicy()];
 		}
+	}
+
+	// Reap the audio context specifically
+	var reapOldAudioContext = function() {
+		var tmpctx = new AudioContext();
+
+		if ( that.standby == Gapless5AudioContext )
+		{
+			Gapless5StandbyAudioContext = tmpctx;
+			Gapless5StandbyAudioContext = null;
+		}
+		else
+		{
+			Gapless5AudioContext = tmpctx;
+			Gapless5AudioContext = null;
+		}
+
+		tmpctx = null;
+	}
+
+	// Delete a context and any sources that were loaded into it. Play games
+	// with audio setting. Play games to prevent memory leakage on random
+	// iOS Mobile platforms
+	var reapOldAudioData = function() {
+		for (var i in that.sources)
+		{
+			if (that.sources[i].getState() == Gapless5State.Loading)
+			{
+				that.sources[i].cancelRequest();
+			}
+			that.sources[i].stop();
+		}
+	
+		reapOldAudioContext();
+		that.loadingTrack = -1;
+		that.sources = [];
+		that.loadQueue = [];
 	}
 
 	// Dealloc current audioContext, cut over to a prepared standby if it exists,
         // and reset the cutover flag.
 	var cutoverAudioContext = function () {
-		if ( parent.context == Gapless5AudioContext )
+		if ( that.standby == Gapless5AudioContextStandby )
 		{
 			Gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
 			parent.context = Gapless5AudioContextStandby;
@@ -483,8 +520,6 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 
 		that.cutover = false;
-		// TODO: Do we need to migrate states and things from one context
-		// to the others?
 	}
 
 	// REQUEST MANAGEMENT STRATEGIES
@@ -560,8 +595,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// Based on a request management policy, determine how and when the next
 	// track should be loaded.
 	this.dequeueNextLoad = function() {
-		// TODO: offload setLookAhead stuff here, based on whether the state
-		// has changed or not from shuffled to not, and based on the variables
+		// In case we changed the shuffle mode, make sure the lookahead value is correct.
 		that.lookAhead = setLookAhead();
 
 		switch(that.getPolicy()) 
@@ -580,12 +614,11 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 	}
 
-	// The state change callback function. Upon track change, figure out which
-        // tasks are required to minimize memory use in the browser.
-	this.stateChange = function() {
-		// cutoverAudioContext();
-		// get rid of the sources that aren't part of the current context (new function)
-		// If moving between shuffle mode or not, be sure to change the policy
+	// When changing between player states (shuffle/unshuffle, new policies) you likely
+	// want to flush all memory of the request manager, and cut over to a new audio context.
+	this.flush = function() {
+		cutoverAudioContext();	// Switch audio contexts
+		reapOldAudioData();	// Remove old sources and release context memory
 	}
 }
 
@@ -1084,7 +1117,8 @@ var refreshTracks = function(newIndex) {
 	// prevent updates while tracks are coming in
 	initialized = false;
 
-	that.removeAllTracks();
+	// Flush the request manager, and rebuild the track ordering
+	that.mgr.flush();
 	that.trk.rebasePlayList(newIndex);
 
 	for (var i = 0; i < numTracks() ; i++ )
@@ -1249,6 +1283,7 @@ this.insertTrack = function (point, audioPath) {
 	point = Math.min(Math.max(point, 0), trackCount);
 	if (point == trackCount)
 	{
+		// TODO: is this right? need to add to mgr stuff too
 		that.addTrack(audioPath);
 	}
 	else
@@ -1331,24 +1366,6 @@ this.replaceTrack = function (point, audioPath) {
 	that.insertTrack(point, audioPath);
 }
 
-this.removeAllTracks = function () {
-	for (var i in that.mgr.sources)
-	{
-		if (that.mgr.sources[i].getState() == Gapless5State.Loading)
-		{
-			that.mgr.sources[i].cancelRequest();
-		}
-		that.mgr.sources[i].stop();
-	}
-	that.mgr.loadingTrack = -1;
-	// TODO: move this function into the FileList object
-	that.mgr.sources = [];
-	that.mgr.loadQueue = [];
-	if (initialized)
-	{
-		updateDisplay();
-	}
-};
 
 this.shuffleToggle = function() {
 	if (isShuffleActive == false) return;
