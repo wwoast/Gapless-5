@@ -44,14 +44,19 @@ var Gapless5Policy = {
 	"Memory"  : 4,   // use duration-based memory heuristic to limit memory use
 	};
 
-// Request manager settings
+// Tunable request manager settings
 // Look-Ahead Policy settings
 var Gapless5PercentOverlap = 50;	// last-lookahead track is 50% loaded before next buffer starts
-var Gapless5OverlapMinimum = 90;	// TODO: if track shorter than 90s, cut-over at beginning of last track
+var Gapless5OverlapMinimum = 90;	// if track shorter than 90s, cut-over at beginning of last track
 // Memory-Policy settings
 var Gapless5MemoryLookAhead = -1;	// songs to grab in advance (-1, no limit)
 var Gapless5MBPerMin = 10;		// heuristic for audio file size per minute (16-bit, 44.1kHz)
 var Gapless5MemoryMax = 256;		// maximum amount of memory to use in MB
+// Shuffle settings
+// The number of songs to buffer in shuffle mode.
+//     0: turn off gapless playback in shuffle mode
+//    -1: ignore this parameter and use normal Gapless5MemoryLookAhead settings
+var Gapless5ShuffleLookAhead = -1;		
 
 
 // A Gapless5Source "class" handles track-specific audio requests
