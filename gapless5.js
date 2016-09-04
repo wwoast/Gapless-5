@@ -400,6 +400,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	this.orderedPolicy = Gapless5Policy.OOM;
 	this.shuffledPolicy = Gapless5Policy.OOM;
 	this.lookAhead = Gapless5LookAhead;
+	this.stateTasks = {};		// List of tasks to perform on a state change
 	this.evtPercent = new Event("percent", {"bubbles":true, "cancellable":false});
 	$(parent).addEventListener("percent", function(e) { askForNewContext(); }, false);
 
@@ -461,10 +462,6 @@ var Gapless5RequestManager = function(parentPlayer) {
 		// TODO: Do we need to migrate states and things from one context
 		// to the others?
 	}
-
-
-	// The state change callback function. Upon track change, figure out which
-        // tasks are required to minimize memory use in the browser.
 
 	// REQUEST MANAGEMENT STRATEGIES
 	// Gapless5Policy = OOM (The original/default Gapless-5 behavior)
@@ -552,6 +549,12 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 	}
 
+	// The state change callback function. Upon track change, figure out which
+        // tasks are required to minimize memory use in the browser.
+	this.stateChange = function() {
+		// cutoverAudioContext();
+		// get rid of the sources that aren't part of the current context (new function)
+	}
 }
 
 
