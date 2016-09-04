@@ -19,7 +19,7 @@ window.mobilecheck = function() {
 	// taken from http://detectmobilebrowsers.com
 	var check = false;
 	(function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od|ad)|iris|kindle|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))check = true})(navigator.userAgent||navigator.vendor||window.opera);
-	return check; }
+	return check; };
 window.hasWebKit = ('webkitAudioContext' in window) && !('chrome' in window);
 
 // There can be only one AudioContext per window, so to have multiple players we must define this outside the player scope
@@ -41,18 +41,18 @@ var Gapless5Policy = {
 	"Mobile"  : 1,   // no more than 2 songs buffered ahead of current song
 	"Desktop" : 2,   // no more than 5 songs buffered ahead of current song
 	"Album"   : 3,   // buffer songs until the last song on an album
-	"Memory"  : 4,   // use duration-based memory heuristic to limit memory use
+	"Memory"  : 4    // use duration-based memory heuristic to limit memory use
 	};
 
 // Default number of songs to look ahead for specific request manager modes, by policy
 //     0: don't buffer any songs for look-ahead
 //    -1: no limit on the songs to download for look-ahead
 var Gapless5LookAhead = {
-	"OOM" : -1,
-	"Mobile" : 2,
-	"Desktop": 5,
-	"Album": 100,
-        "Memory": 100,
+	"OOM"     : -1,
+	"Mobile"  : 2,
+	"Desktop" : 5,
+	"Album"   : 100,
+        "Memory"  : 100
 	};
 
 // Tunable request manager settings
@@ -113,9 +113,9 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 		{
 			audio.volume = val;
 		}
-	}
+	};
 
-	this.getState = function () { return state; }
+	this.getState = function () { return state; };
 
 	var setState = function (newState) {
 		state = newState;
@@ -129,17 +129,17 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 		}	
 		else
 		{
-			console.log("setContext: can't set audio context if state is initialized (" + state + ")";
+			console.log("setContext: can't set audio context if state is initialized (" + state + ")");
 		}
-	}
+	};
 
-	this.finished = function() { return audioFinished; }
+	this.finished = function() { return audioFinished; };
 
 	this.timer = function() {
 		var now = new Date().getTime();
 		var timerMS = now - initMS;
 		return timerMS;
-	}
+	};
 
 	this.cancelRequest = function (isError) {
 		setState((isError == true) ? Gapless5State.Error : Gapless5State.None);
@@ -156,17 +156,17 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 		loadMS = 0;
 		finishMS = 0;
 		that.uiDirty = true;
-	}
+	};
 
 	var onEnded = function (endEvent) {
 		if (state != Gapless5State.Play) return;
 		audioFinished = true;
 		parent.onEndedCallback();
-	}
+	};
 
 	var onPlayEvent = function (playEvent) {
 		startTime = (new Date().getTime()) - position;
-	}
+	};
 
 	var onLoadedWebAudio = function (inBuffer) {
 		if (!request) return;
@@ -198,7 +198,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 		// once we have WebAudio data loaded, we don't need the HTML5 audio stream anymore
 		audio = null;
 		that.uiDirty = true;
-	}
+	};
 
 	var onLoadedHTML5Audio = function (inBuffer) {
 		if (state != Gapless5State.Loading) return;
@@ -217,7 +217,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 			playAudioFile(true);
 		}
 		that.uiDirty = true;
-	}
+	};
 
 	this.stop = function () {
 		if (state == Gapless5State.Stop) return;
@@ -289,15 +289,15 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 
 	this.inPlayState = function() {
 		return (state == Gapless5State.Play); 
-	}
+	};
 
 	this.isPlayActive = function() {
 		return (that.inPlayState() || queuedState == Gapless5State.Play) && !that.audioFinished; 
-	}
+	};
 
-	this.getPosition = function() { return position; }
+	this.getPosition = function() { return position; };
 
-	this.getLength = function() { return endpos; }
+	this.getLength = function() { return endpos; };
 
 	this.play = function() {
 		if (state == Gapless5State.Loading)
@@ -308,7 +308,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 		{
 			playAudioFile(); // play immediately
 		}
-	}
+	};
 
 	this.tick = function() {
 		if (state == Gapless5State.Play)
@@ -322,7 +322,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 			if (loadedPercent != newPercent)
 			{
 				loadedPercent = newPercent;
-				parent.setLoadedSpan(loadedPercent)
+				parent.setLoadedSpan(loadedPercent);
 			}
 		}
 
@@ -331,7 +331,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 			$(parent).dispatchEvent(parent.mgr.evtPercent);
 			managerChecked = true;	// Fires only once per song load
 		}
-	}
+	};
 
 	this.setPosition = function(newPosition, bResetPlay) {
 		position = newPosition;
@@ -386,7 +386,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 		}).fail(function() { 
 			that.cancelRequest(true);
 		});
-	}
+	};
 }
 
 
@@ -419,19 +419,18 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// has played a specific percentage of length. The request manager will use these
 	// to decide when to start loading a secondary buffer.
 	var askForNewContext = function() {
-		if ( that.orderedPolicy == Gapless5Policy.OOM ) {
+		if ( that.orderedPolicy == Gapless5Policy.OOM ) 
 			return;
-		}
 
 		// Ready for a new context, given we're on the song at the end of 
 		// the previous audioContext buffer. Prepare the next queue, and
 		// start loading new tracks if the policy says to.
-		if ( that.partialQueue.length == 0 ) {
+		if ( that.partialQueue.length == 0 )
 		{
 			that.cutover = true;
 			dequeueNextLoad();
 		}
-	}
+	};
 
 	// Build a partial queue given a count of songs, and set their target
 	// audio context to the one they'll be playing in.
@@ -448,7 +447,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 				that.sources[index].setContext(context);
 			}
 		}
-	}
+	};
 
 	// Set the number of songs to buffer in the request manager, based on
 	// the tunable global variables, and the current shufflemode.
@@ -462,7 +461,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 		{
 			return Gapless5LookAhead[that.getPolicy()];
 		}
-	}
+	};
 
 	// Reap the audio context specifically
 	var reapOldAudioContext = function() {
@@ -480,13 +479,13 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 
 		tmpctx = null;
-	}
+	};
 
 	// Delete a context and any sources that were loaded into it. Play games
 	// with audio setting. Play games to prevent memory leakage on random
 	// iOS Mobile platforms
 	var reapOldAudioData = function() {
-		for (var i in that.sources)
+		for (var i = 0; i < that.sources.length ; i++)
 		{
 			if (that.sources[i].getState() == Gapless5State.Loading)
 			{
@@ -499,7 +498,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 		that.loadingTrack = -1;
 		that.sources = [];
 		that.loadQueue = [];
-	}
+	};
 
 	// Dealloc current audioContext, cut over to a prepared standby if it exists,
         // and reset the cutover flag.
@@ -520,7 +519,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 
 		that.cutover = false;
-	}
+	};
 
 	// REQUEST MANAGEMENT STRATEGIES
 	// Gapless5Policy = OOM (The original/default Gapless-5 behavior)
@@ -540,7 +539,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 		{
 			that.loadingTrack = -1;
 		}
-	}
+	};
 
 	// Gapless5Policy = (Mobile/Desktop/Album/Memory)
 	// Load only N-1 songs ahead of the starting song into a buffer.
@@ -569,7 +568,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 		{
 			that.loadingTrack = -1;
 		}
-	}
+	};
 
 
 	// PUBLIC METHODS
@@ -583,14 +582,14 @@ var Gapless5RequestManager = function(parentPlayer) {
 		{
 			return orderedPolicy;
 		}
-	}
+	};
 
 	// Choose the effective policy in use. TODO: Some rules:
 	//    album: revert to "desktop" policy if used for shuffledPolicy
         this.setPolicy = function(orderedPolicy, shuffledPolicy) {
 	 	that.orderedPolicy = orderedPolicy;
 		that.shuffledPolicy = shuffledPolicy;
-	}
+	};
 
 	// Based on a request management policy, determine how and when the next
 	// track should be loaded.
@@ -612,14 +611,14 @@ var Gapless5RequestManager = function(parentPlayer) {
 				lookAheadPolicy();
 				break;
 		}
-	}
+	};
 
 	// When changing between player states (shuffle/unshuffle, new policies) you likely
 	// want to flush all memory of the request manager, and cut over to a new audio context.
 	this.flush = function() {
 		cutoverAudioContext();	// Switch audio contexts
 		reapOldAudioData();	// Remove old sources and release context memory
-	}
+	};
 }
 
 
@@ -661,14 +660,14 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 	var clone = function(input) { 
 		var copy = JSON.parse(JSON.stringify(input));
 		return copy;
-	}
+	};
 
 	// Swap two elements in an array
 	var swapElements = function(someList, sourceIndex, destIndex) { 
 		var temp = someList[sourceIndex];
 		someList[sourceIndex] = someList[destIndex];
 		someList[destIndex] = temp;
-	}
+	};
 
 	// Add _index values to each member of the array, so we know what the
 	// original track was.
@@ -677,7 +676,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 		for ( var n = 0; n < temp.length ; n++)
 			temp[n]._index = n + 1;
 		return temp;
-	}
+	};
 
 	// Reorder an array so that the outputList starts at the desiredIndex
 	// of the inputList.
@@ -685,7 +684,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 		var tempList = clone(inputList);
 		var outputList = tempList.concat(tempList.splice(0, desiredIndex));
 		return outputList;
-	}
+	};
 
 	// Shuffle a playlist, making sure that the next track in the list
 	// won't be the same as the current track being played.
@@ -714,7 +713,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 		// If the list of indexes in the new list is the same as the last,
 		// do a reshuffle. TOWRITE
 		return outputList;
-        }
+        };
 
 	// Already pressed the shuffle button once from normal mode.
 	// Revert to previous list / item, and terminate.
@@ -724,7 +723,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 
 		shuffleMode = !(shuffleMode);
 		remakeList = false;
-	}
+	};
 
 	// Going into shuffle mode. Tell the Player to remake the list
 	// as soon as a new track is reached or chosen. 
@@ -738,7 +737,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 	
 		shuffleMode = true;
 		remakeList = true;
-	}
+	};
 
 	// Leaving shuffle mode. Tell the Player to remake the list
 	// as soon as a new track is reached or chosen. 
@@ -755,7 +754,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 		that.currentItem = 0;	// Position to head of list
 		shuffleMode = false;
 		remakeList = true;
-	}
+	};
 
 	// Add a song to a single member of the FileList object, adjusting
 	// each FileList entry's _index value as necessary.
@@ -776,7 +775,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 			list.push(addin);
 		else
 			list.splice(point, 0, addin);
-	}
+	};
 
 	// Remove a song from a single member of the FileList object,
 	// adjusting each FileList entry's _index value as necessary.
@@ -794,7 +793,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 		for ( var k = 0 ; k < list.length ; k++ )
 			if ( list[k]._index >= point + 1 )
 				list[k]._index = list[k]._index - 1;
-	}
+	};
 
 
 	// PUBLIC METHODS
@@ -810,7 +809,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 
 		// Default value, in case some array value was removed
 		return 0;
-	}
+	};
 
 	// Toggle shuffle mode or not, and prepare for rebasing the playlist
 	// upon changing to the next available song. NOTE that each function here
@@ -824,7 +823,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 
 		if ( shuffleMode == true )
 			return disableShuffle();
-	}
+	};
 
 	// After toggling the list, the next/prev track action must trigger
 	// the list getting remade, with the next desired track as the head.
@@ -835,19 +834,19 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 
 		that.currentItem = 0;		// Position to head of the list
 		remakeList = false;		// Rebasing is finished.
-	}
+	};
 
 	// Signify to this object that at the next track change, it will be OK 
 	// to reorder the current playlist starting at the next desired track.
 	this.readyToRemake = function() {
 		return remakeList;
-	}
+	};
 
 	// Are we in shuffle mode or not? If we just came out of shuffle mode,
 	// the player object will want to know.
 	this.shuffled = function() {
 		return shuffleMode;
-	}
+	};
 
 	// PlayList manipulation requires us to keep state on which track is 		
 	// playing. Player object state changes may need to update the current		
@@ -856,13 +855,13 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 		that.previousItem = that.currentItem;	
 		that.currentItem = index;
 		that.trackNumber = this.current[index]._index;		
-	}
+	};
 
 	// Get the "highlighted" track in the current playlist. After a shuffle,
 	// this may not be the track that is currently playing.	
 	this.get = function(index) {
 		return that.currentItem;
-	}
+	};
 
         // Helper: find the given index in the current playlist
         this.getIndex = function(index) {
@@ -874,7 +873,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 		}
 		else
 			return index;
-	}
+	};
 
 	// Add a new song into the FileList object.
 	// TODO: this should take objects, not files, as input
@@ -901,7 +900,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 			that.currentItem = that.currentItem + 1;
 
 		that.trackNumber = that.current[that.currentItem]._index;
-	}
+	};
 
 	// Remove a song from the FileList object.
 	this.remove = function(index) {
@@ -927,13 +926,13 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 				that.currentItem = that.currentItem - 1;
 
 		that.trackNumber = that.current[that.currentItem]._index;
-	}
+	};
 
 	// Get an array of songfile paths from this object, appropriate for 
 	// including in a Player object.
 	this.files = function() {
 		return that.current.map(function (song) { return song.file });
-	}
+	};
 
 	// Add _index parameter to the JSON array of tracks
 	this.original = addIndices(this.original);
@@ -953,7 +952,7 @@ var Gapless5FileList = function(inPlayList, inStartingTrack, inShuffle) {
 		// On object creation, make current list use startingTrack as head of list
 		this.current = reorder(this.original, this.startingTrack);
 	}
-}
+};
 
 
 
@@ -979,8 +978,8 @@ var SCRUB_RESOLUTION = 65535;
 var SCRUB_WIDTH = 0;
 var scrubPosition = 0;
 var isScrubbing = false;
-var LOAD_TEXT = "loading..."
-var ERROR_TEXT = "error!"
+var LOAD_TEXT = "loading...";
+var ERROR_TEXT = "error!";
 
 // System
 var initialized = false;
@@ -1061,7 +1060,7 @@ var dispIndex = function () {
 		return that.trk.get();
 	else
 		return -1;
-}
+};
 
 var readyToRemake = function () {
 	// FileList object must be initiated
@@ -1133,7 +1132,7 @@ var refreshTracks = function(newIndex) {
 // (PUBLIC) ACTIONS
 this.totalTracks = function() {
 	return numTracks();
-}
+};
 
 
 this.mapKeys = function (options) {
@@ -1364,8 +1363,7 @@ this.removeTrack = function (point) {
 this.replaceTrack = function (point, audioPath) {
 	that.removeTrack(point);
 	that.insertTrack(point, audioPath);
-}
-
+};
 
 this.shuffleToggle = function() {
 	if (isShuffleActive == false) return;
@@ -1527,7 +1525,7 @@ this.playpause = function (e) {
 		that.play(e);
 	else
 		that.pause(e);
-}
+};
 
 this.cue = function (e) {
 	if (!isPlayButton)
@@ -1543,7 +1541,7 @@ this.cue = function (e) {
 	{
 		that.play(e);
 	}
-}
+};
 
 this.pause = function (e) {
 	if (that.mgr.sources.length == 0) return;
