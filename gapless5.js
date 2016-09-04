@@ -44,6 +44,17 @@ var Gapless5Policy = {
 	"Memory"  : 4,   // use duration-based memory heuristic to limit memory use
 	};
 
+// Default number of songs to look ahead for specific request manager modes, by policy
+//     0: don't buffer any songs for look-ahead
+//    -1: no limit on the songs to download for look-ahead
+var Gapless5LookAhead = {
+	"OOM" : -1,
+	"Mobile" : 2,
+	"Desktop": 5,
+	"Album": 100,
+        "Memory": 100,
+	};
+
 // Tunable request manager settings
 // Look-Ahead Policy settings
 var Gapless5PercentOverlap = 50;	// last-lookahead track is 50% loaded before next buffer starts
@@ -54,7 +65,7 @@ var Gapless5MBPerMin = 10;		// heuristic for audio file size per minute (16-bit,
 var Gapless5MemoryMax = 256;		// maximum amount of memory to use in MB
 var Gapless5Mobile = false;		// mobile gapless support may be poor. fallback to <audio>
 
-// Shuffle settings
+// Shuffle settings for request manager
 // The number of songs to buffer in shuffle mode.
 //     0: turn off gapless playback in shuffle mode
 //    -1: ignore this parameter and use normal Gapless5MemoryLookAhead settings
@@ -399,8 +410,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// the loading/progress state, and other metadata
 	this.orderedPolicy = Gapless5Policy.OOM;
 	this.shuffledPolicy = Gapless5Policy.OOM;
-	this.lookAhead = Gapless5LookAhead;
-	this.stateTasks = {};		// List of tasks to perform on a state change
+	this.lookAhead = Gapless5LookAhead.OOM;
 	this.evtPercent = new Event("percent", {"bubbles":true, "cancellable":false});
 	$(parent).addEventListener("percent", function(e) { askForNewContext(); }, false);
 
@@ -437,6 +447,20 @@ var Gapless5RequestManager = function(parentPlayer) {
 				var index = entry[0];
 				that.sources[index].setContext(context);
 			}
+		}
+	}
+
+	// Set the number of songs to buffer in the request manager, based on
+	// the tunable global variables, and the current shufflemode.
+	// NOTE: FileList operations must complete first, so that shuffle check works
+	var setLookAhead = function() {
+		if (parent.trk.shuffled() == true)
+		{
+			that.lookAhead = Gapless5ShuffleLookAhead;
+		}
+		else
+		{
+			that.lookAhead = Gapless5LookAhead[that.getPolicy()];
 		}
 	}
 
@@ -536,6 +560,10 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// Based on a request management policy, determine how and when the next
 	// track should be loaded.
 	this.dequeueNextLoad = function() {
+		// TODO: offload setLookAhead stuff here, based on whether the state
+		// has changed or not from shuffled to not, and based on the variables
+		that.lookAhead = setLookAhead();
+
 		switch(that.getPolicy()) 
 		{
 			case Gapless5Policy.OOM:
@@ -543,7 +571,10 @@ var Gapless5RequestManager = function(parentPlayer) {
 				break;
 
 			case Gapless5Policy.Mobile:
-				that.lookAhead = 2;	// Load two songs after the current one
+				lookAheadPolicy();
+				break;
+
+			case Gapless5Policy.Desktop:
 				lookAheadPolicy();
 				break;
 		}
@@ -554,6 +585,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	this.stateChange = function() {
 		// cutoverAudioContext();
 		// get rid of the sources that aren't part of the current context (new function)
+		// If moving between shuffle mode or not, be sure to change the policy
 	}
 }
 
