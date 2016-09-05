@@ -328,7 +328,7 @@ function Gapless5Source(parentPlayer, inContext, inOutputNode) {
 
 		if ((loadedPercent >= Gapless5PercentOverlap) && (managerChecked == false))
 		{
-			$(parent).dispatchEvent(parent.mgr.evtPercent);
+			window.dispatchEvent(parent.mgr.evtPercent);
 			managerChecked = true;	// Fires only once per song load
 		}
 	};
@@ -412,7 +412,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 	this.shuffledPolicy = Gapless5Policy.OOM;
 	this.lookAhead = Gapless5LookAhead.OOM;
 	this.evtPercent = new Event("percent", {"bubbles":true, "cancellable":false});
-	$(parent).addEventListener("percent", function(e) { askForNewContext(); }, false);
+	window.addEventListener("percent", function(e) { askForNewContext(); }, false);
 
 	// PRIVATE METHODS
 	// For most policies, we create event listeners that fire when the song
