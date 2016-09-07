@@ -22,10 +22,6 @@ window.mobilecheck = function() {
 	return check; };
 window.hasWebKit = ('webkitAudioContext' in window) && !('chrome' in window);
 
-// There can be only one AudioContext per window, so to have multiple players we must define this outside the player scope
-var Gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-var Gapless5AudioContextStandby = null;
-
 var GAPLESS5_PLAYERS = {};
 var Gapless5State = {
 	"None"     : 0,
@@ -70,6 +66,50 @@ var Gapless5Mobile = false;		// mobile gapless support may be poor. fallback to 
 //     0: turn off gapless playback in shuffle mode
 //    -1: ignore this parameter and use normal Gapless5MemoryLookAhead settings
 var Gapless5ShuffleLookAhead = -1;		
+
+
+// There can be only one AudioContext per window, so to have multiple players we 
+// must define this outside the player scope. And to switch between multiple
+// contexts, we must be able to delete/reclaim contexts, so they can't be 
+// globally scoped.
+function Gapless5ContextManager() {
+	var ctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+	var standbyctx = null;
+	
+	// Swap the player over to whatever audioContext is currently operating
+	// as the standby context. Also zero-out the ingoing "standby" context.
+	// Ideally zeroing the AudioContexts would be a separate function, but 
+	// we don't want stray references to hurt the browser's ability to delete
+	// the objects and reclaim memory.
+	this.cutover = function () {
+		if ( ctx == null )
+		{
+			standbyctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			ctx.close();
+			ctx = null;
+			delete ctx;
+
+			return standbyctx;
+		}
+		else
+		{
+			ctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+			standbyctx.close();
+			standbyctx = null;
+			delete standbyctx;
+
+			return ctx;
+		}
+	};
+
+	this.get = function() {
+		if ( ctx == null )
+			return standbyctx;
+		else
+			return ctx;
+	};
+}
+var Gapless5AudioContext = new Gapless5ContextManager();
 
 
 // A Gapless5Source "class" handles track-specific audio requests
@@ -462,9 +502,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 		}
 	};
 
-	// Delete a context and any sources that were loaded into it. Play games
-	// with audio setting. Play games to prevent memory leakage on random
-	// iOS Mobile platforms
+	// Unset sources when done or refreshing an audio context.
 	var reapOldAudioData = function() {
 		for (var i = 0; i < that.sources.length ; i++)
 		{
@@ -480,30 +518,6 @@ var Gapless5RequestManager = function(parentPlayer) {
 		that.loadQueue = [];
 	};
 
-	// Swap the player over to whatever audioContext is currently operating
-	// as the standby context. Also zero-out the ingoing "standby" context.
-	// Apparently some browsers require funky business to do this (ergo the
-	// tmpctx tomfoolery). Ideally zeroing the AudioContexts would be a 
-	// separate function, but having too many references to these memoryhog
-	// objects proved to be painful to manage logic for.
-	var cutoverAudioContext = function () {
-		if ( Gapless5AudioContextStandby == null )
-		{
-			Gapless5AudioContextStandby = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			parent.context = Gapless5AudioContextStandby;
-			Gapless5AudioContext.close();
-			Gapless5AudioContext = null;
-		}
-		else
-		{
-			Gapless5AudioContext = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			parent.context = Gapless5AudioContext;
-			Gapless5AudioContextStandby.close();
-			Gapless5AudioContextStandby = null;
-		}
-
-		that.cutover = false;
-	};
 
 	// REQUEST MANAGEMENT STRATEGIES
 	// Gapless5Policy = OOM (The original/default Gapless-5 behavior)
@@ -600,8 +614,11 @@ var Gapless5RequestManager = function(parentPlayer) {
 	// When changing between player states (shuffle/unshuffle, new policies) you likely
 	// want to flush all memory of the request manager, and cut over to a new audio context.
 	this.flush = function() {
-		reapOldAudioData();	// Remove old sources and release context memory
-		cutoverAudioContext();	// Switch audio contexts and null out the "standby" one
+		// Remove old sources and release context memory
+		reapOldAudioData();
+
+		// Switch audio contexts and null out the "standby" one
+		parent.context = Gapless5AudioContext.cutover();	
 	};
 }
 
@@ -974,7 +991,7 @@ this.useHTML5Audio = ((options != null) && ('useHTML5Audio' in options)) ? optio
 this.id = Math.floor((1 + Math.random()) * 0x10000);
 
 // WebAudio API
-var context = Gapless5AudioContext;
+var context = Gapless5AudioContext.get();
 var gainNode = (window.hasWebKit) ? context.createGainNode() : (typeof AudioContext != "undefined") ? context.createGain() : null;
 if (context && gainNode)
 {
