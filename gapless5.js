@@ -82,7 +82,7 @@ function Gapless5ContextManager() {
 	// we don't want stray references to hurt the browser's ability to delete
 	// the objects and reclaim memory.
 	this.cutover = function () {
-		if ( ctx == null )
+		if ( ctx != null )
 		{
 			standbyctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
 			ctx.close();
