@@ -74,8 +74,7 @@ var Gapless5ShuffleLookAhead = -1;
 // globally scoped.
 function Gapless5ContextManager() {
 	var contexts = [];
-	var ctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-	contexts.push(ctx);
+	contexts[0] = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
 	
 	// Swap the player over to whatever audioContext is currently operating
 	// as the standby context. Also zero-out the ingoing "standby" context.
@@ -86,9 +85,10 @@ function Gapless5ContextManager() {
 		var newctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
 		for ( var i = 0; i < contexts.length; i++ )
 		{
-			var oldctx = contexts.shift(0);
+			var oldctx = contexts[i];
 			oldctx.close();
-			delete oldctx;	
+			delete oldctx;
+			contexts[i] = null;
 		}
 
 		contexts.push(newctx);
@@ -96,10 +96,7 @@ function Gapless5ContextManager() {
 	};
 
 	this.get = function() {
-		if ( ctx == null )
-			return standbyctx;
-		else
-			return ctx;
+		return contexts[contexts.length - 1];
 	};
 }
 var Gapless5AudioContext = new Gapless5ContextManager();
