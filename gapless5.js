@@ -84,11 +84,11 @@ function Gapless5ContextManager() {
 	// the objects and reclaim memory.
 	this.cutover = function () {
 		var newctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-
-		for ( var i = 0; i < contexts.length(); i++ )
+		for ( var i = 0; i < contexts.length; i++ )
 		{
-			contexts[i].close();	 
-			contexts[i] = null;
+			var oldctx = contexts.shift(0);
+			oldctx.close();
+			delete oldctx;	
 		}
 
 		contexts.push(newctx);
