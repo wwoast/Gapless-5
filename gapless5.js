@@ -73,8 +73,9 @@ var Gapless5ShuffleLookAhead = -1;
 // contexts, we must be able to delete/reclaim contexts, so they can't be 
 // globally scoped.
 function Gapless5ContextManager() {
+	var contexts = [];
 	var ctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-	var standbyctx = null;
+	contexts.push(ctx);
 	
 	// Swap the player over to whatever audioContext is currently operating
 	// as the standby context. Also zero-out the ingoing "standby" context.
@@ -82,24 +83,16 @@ function Gapless5ContextManager() {
 	// we don't want stray references to hurt the browser's ability to delete
 	// the objects and reclaim memory.
 	this.cutover = function () {
-		if ( ctx != null )
-		{
-			standbyctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			ctx.close();
-			ctx = null;
-			delete ctx;
+		var newctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
 
-			return standbyctx;
-		}
-		else
+		for ( var i = 0; i < contexts.length(); i++ )
 		{
-			ctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-			standbyctx.close();
-			standbyctx = null;
-			delete standbyctx;
-
-			return ctx;
+			contexts[i].close();	 
+			contexts[i] = null;
 		}
+
+		contexts.push(newctx);
+		return newctx;
 	};
 
 	this.get = function() {
