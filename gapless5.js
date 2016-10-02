@@ -74,29 +74,52 @@ var Gapless5ShuffleLookAhead = -1;
 // globally scoped.
 function Gapless5ContextManager() {
 	var contexts = [];
-	contexts[0] = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-	
+	contexts[0] = initContext();
+	var gainNode = initGainNode(contexts[0]);
+	initGainConnect(contexts[0], gainNode);
+
+	var initContext = function() {
+		return (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
+	}
+
+	var initGainNode = function(context) {
+		return (window.hasWebKit) ? context.createGainNode() : (typeof AudioContext != "undefined") ? context.createGain() : null;
+	}
+
+	var initGainConnect = function(context, gainNode) {
+		if (context && gainNode)
+		{
+			gainNode.connect(context.destination);
+		}
+	}
+
 	// Swap the player over to whatever audioContext is currently operating
 	// as the standby context. Also zero-out the ingoing "standby" context.
 	// Ideally zeroing the AudioContexts would be a separate function, but 
 	// we don't want stray references to hurt the browser's ability to delete
 	// the objects and reclaim memory.
 	this.cutover = function () {
-		var newctx = (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
-		for ( var i = 0; i < contexts.length; i++ )
+		var newctx = initContext();
+		for ( var i = 0; i < contexts.length && contexts[i] != null; i++ )
 		{
-			var oldctx = contexts[i];
-			oldctx.close();
-			delete oldctx;
-			contexts[i] = null;
+			contexts[i].close();
+			delete contexts[i];
+			// contexts[i].shift;	// Track nulls for now
 		}
 
+		gainNode = initGainNode(newctx);
+		initGainConnect(newctx, gainNode);
+
 		contexts.push(newctx);
-		return newctx;
+		return contexts[contexts.length - 1];
 	};
 
-	this.get = function() {
+	this.getContext = function() {
 		return contexts[contexts.length - 1];
+	};
+
+	this.getGainNode = function() {
+		return gainNode;	
 	};
 }
 var Gapless5AudioContext = new Gapless5ContextManager();
@@ -608,7 +631,7 @@ var Gapless5RequestManager = function(parentPlayer) {
 		reapOldAudioData();
 
 		// Switch audio contexts and null out the "standby" one
-		parent.context = Gapless5AudioContext.cutover();	
+		// TODO: must do this in the parent object
 	};
 }
 
@@ -981,12 +1004,8 @@ this.useHTML5Audio = ((options != null) && ('useHTML5Audio' in options)) ? optio
 this.id = Math.floor((1 + Math.random()) * 0x10000);
 
 // WebAudio API
-var context = Gapless5AudioContext.get();
-var gainNode = (window.hasWebKit) ? context.createGainNode() : (typeof AudioContext != "undefined") ? context.createGain() : null;
-if (context && gainNode)
-{
-	gainNode.connect(context.destination);
-}
+var context = Gapless5AudioContext.getContext();
+var gainNode = Gapless5AudioContext.getGainNode();
 
 // Playlist
 this.trk = null;	// Playlist manager object
@@ -1109,6 +1128,9 @@ var refreshTracks = function(newIndex) {
 
 	// Flush the request manager, and rebuild the track ordering
 	that.mgr.flush();
+	// TODO: do this in the mgr object somehow?
+	context = Gapless5AudioContext.cutover();
+	
 	that.trk.rebasePlayList(newIndex);
 
 	for (var i = 0; i < numTracks() ; i++ )
