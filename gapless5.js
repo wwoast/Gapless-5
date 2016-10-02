@@ -74,9 +74,6 @@ var Gapless5ShuffleLookAhead = -1;
 // globally scoped.
 function Gapless5ContextManager() {
 	var contexts = [];
-	contexts[0] = initContext();
-	var gainNode = initGainNode(contexts[0]);
-	initGainConnect(contexts[0], gainNode);
 
 	var initContext = function() {
 		return (window.hasWebKit) ? new webkitAudioContext() : (typeof AudioContext != "undefined") ? new AudioContext() : null;
@@ -121,6 +118,10 @@ function Gapless5ContextManager() {
 	this.getGainNode = function() {
 		return gainNode;	
 	};
+
+	contexts[0] = initContext();
+	var gainNode = initGainNode(contexts[0]);
+	initGainConnect(contexts[0], gainNode);
 }
 var Gapless5AudioContext = new Gapless5ContextManager();
 
@@ -1130,6 +1131,7 @@ var refreshTracks = function(newIndex) {
 	that.mgr.flush();
 	// TODO: do this in the mgr object somehow?
 	context = Gapless5AudioContext.cutover();
+	gainNode = Gapless5AudioContext.getGainNode();
 	
 	that.trk.rebasePlayList(newIndex);
 
